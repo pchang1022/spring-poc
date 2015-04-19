@@ -50,7 +50,7 @@ class JpaConfig implements TransactionManagementConfigurer {
     DataSource ds;
     
     @Bean
-    @Profile ("local")
+   // @Profile ("local")
     public DataSource configureDataSourceLocal () {
     	
         HikariConfig config = new HikariConfig();
