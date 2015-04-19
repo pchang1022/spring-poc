@@ -6,9 +6,14 @@ import javax.sql.DataSource;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
@@ -24,6 +29,10 @@ import com.pchang.Application;
 @EnableJpaRepositories(basePackageClasses = Application.class)
 class JpaConfig implements TransactionManagementConfigurer {
 
+	
+	private static final int inte = 1;
+	private static final Logger log = LoggerFactory.getLogger  (TransactionManagementConfigurer.class);
+	
     @Value("${dataSource.driverClassName}")
     private String driver;
     @Value("${dataSource.url}")
@@ -37,8 +46,28 @@ class JpaConfig implements TransactionManagementConfigurer {
     @Value("${hibernate.hbm2ddl.auto}")
     private String hbm2ddlAuto;
 
+    @Autowired
+    DataSource ds;
+    
     @Bean
-    public DataSource configureDataSource() {
+    @Profile ("local")
+    public DataSource configureDataSourceLocal () {
+    	
+        HikariConfig config = new HikariConfig();
+        config.setDriverClassName(driver);
+        config.setJdbcUrl(url);
+        config.setUsername(username);
+        config.setPassword(password);
+        config.addDataSourceProperty("cachePrepStmts", "true");
+        config.addDataSourceProperty("prepStmtCacheSize", "250");
+        config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+        config.addDataSourceProperty("useServerPrepStmts", "true");
+
+        return new HikariDataSource(config);
+    }
+    @Bean
+    @Profile ("dev")
+    public DataSource configureDataSourceDev () {
         HikariConfig config = new HikariConfig();
         config.setDriverClassName(driver);
         config.setJdbcUrl(url);
@@ -55,7 +84,7 @@ class JpaConfig implements TransactionManagementConfigurer {
     @Bean
     public LocalContainerEntityManagerFactoryBean configureEntityManagerFactory() {
         LocalContainerEntityManagerFactoryBean entityManagerFactoryBean = new LocalContainerEntityManagerFactoryBean();
-        entityManagerFactoryBean.setDataSource(configureDataSource());
+        entityManagerFactoryBean.setDataSource(ds); //configureDataSource());
         entityManagerFactoryBean.setPackagesToScan("com.pchang");
         entityManagerFactoryBean.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
 
